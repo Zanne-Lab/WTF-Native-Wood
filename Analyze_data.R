@@ -323,7 +323,7 @@ labels.minor <- c("0\nWet","6\nDry", "12\nWet", "18\nDry", "24\nWet", "30\nDry",
 ggList <- lapply(split(mean.undisc, mean.undisc$site), function(i) {
   ggplot(i, aes(x=months, y=(mean.mass.rem), colour=Species.Code, 
                 group = Species.Code, linetype = Species.Code, shape = Species.Code)) + 
-    geom_errorbar(aes(ymin=(mean.mass.rem-se.mass.rem), ymax=(mean.mass.rem+se.mass.rem)), width=.1, lty=1) +
+    geom_errorbar(aes(ymin=(mean.mass.rem-se.mass.rem), ymax=(mean.mass.rem+se.mass.rem)), width=.1, lty=1, show.legend = F) +
     geom_line() +
     geom_point(size = 2)+
     scale_shape_manual(values=1:nlevels(mean.undisc$Species.Code))+

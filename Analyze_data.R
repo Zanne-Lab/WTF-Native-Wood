@@ -86,16 +86,16 @@ mth.sp_pred <- ggpredict(disc.mod1, c("months [12:42]", "site"))
 disc.plot<-df%>%
   filter(termite_treatment_abbreviation=="TI")%>%
   ggplot(aes(x=months, y=termite.attack, colour = site))+
-  scale_color_manual(values=c("red", "blue"), labels=c("Rainforest", "Savanna"))+
+  scale_color_manual(values=c("blue", "red"), labels=c("Rainforest", "Savanna"))+
   geom_jitter(size=1.5,position=position_jitter(height=0.02, width=1.5))+
   geom_line(aes(x=x, y=predicted), data=filter(mth.sp_pred, group=="DRO"), 
-            inherit.aes=FALSE, colour="red")+
-  geom_ribbon(aes(x=x, ymin=conf.low, ymax=conf.high), data=filter(mth.sp_pred, group=="DRO"), 
-              inherit.aes=FALSE, alpha=0.15, linetype='dashed', colour="red", fill="red") +
-  geom_line(aes(x=x, y=predicted), data=filter(mth.sp_pred, group=="PNW"), 
             inherit.aes=FALSE, colour="blue")+
+  geom_ribbon(aes(x=x, ymin=conf.low, ymax=conf.high), data=filter(mth.sp_pred, group=="DRO"), 
+              inherit.aes=FALSE, alpha=0.15, linetype='dashed', colour="blue", fill="blue") +
+  geom_line(aes(x=x, y=predicted), data=filter(mth.sp_pred, group=="PNW"), 
+            inherit.aes=FALSE, colour="red")+
   geom_ribbon(aes(x=x, ymin=conf.low, ymax=conf.high), data=filter(mth.sp_pred, group=="PNW"), 
-              inherit.aes=FALSE, alpha=0.25, linetype='dashed', colour="blue", fill="blue")+
+              inherit.aes=FALSE, alpha=0.25, linetype='dashed', colour="red", fill="red")+
   xlab("Months")+ 
   ylab("Discovery") + 
   theme_bw(base_size=16) +

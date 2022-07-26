@@ -170,7 +170,6 @@ disc.rate.plot<-disc.rate%>%
         legend.position="right", 
         legend.title = element_text(size=16),
         legend.text = element_text(size=16),
-        #strip.background =element_rect(fill="white"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 disc.rate.plot

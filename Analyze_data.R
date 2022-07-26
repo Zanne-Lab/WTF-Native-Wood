@@ -33,10 +33,6 @@ backtransform.est<-function(x,n){
   return(y)
 }
 
-# calculate logit of proportional mass loss (add 1 to account for negative values), for models on mass loss later
-# function gives warning that values over 1 are treated as percents, which makes the transform incorrect
-# converted negative mass losses to zero
-# function automatically rescales between 0.025 and 0.975 to avoid undefined values at pro.mass.loss = 0
 
 ###################################################################
 # Read in processed csv data files and check dataset properties
@@ -62,9 +58,8 @@ df$Species.Code<-factor(df$Species.Code, levels = sp.order)
 
 
 ###################################################################
-## hyp 1: Discovery rate of deadwood by termites is greater in savanna compared with rainforest
+## testing if discovery rate of deadwood by termites is greater in savanna compared with rainforest
 ## looking at effects of site, time (months since deployment) and species on discovery (termite attack)
-
 ## binomial model testing site, time (months), and species on termite discovery
 ## can't include interaction because of nesting of species within site
 
@@ -79,7 +74,7 @@ car::Anova(disc.mod2) # use this for species effect
 
 
 ###################################################################
-# Plot using model discover ~ months + site binomial data
+# Plot using model: discovery ~ months + site binomial data
 
 mth.sp_pred <- ggpredict(disc.mod1, c("months [12:42]", "site"))
 
@@ -180,8 +175,8 @@ ggsave("Graphics/Discovery.png", g, width = 15, height = 7)
 
 
 ###################################################################
-## hyp 2: termites accelerate decomposition more in the savanna compared with the rainforest
-## beta regression models on pro mass loss
+## testing if termites accelerate decomposition more in the savanna compared with the rainforest
+## beta regression models on prop. mass loss
 ## looking at effects of discovery and site on mass loss (included station as a random factor)
 
 beta.ran<-glmmTMB(pro.mass.loss.tr ~ termite.attack+site+months + (1|station), 
@@ -236,7 +231,7 @@ a<-df%>%
 range(a$pro.mass.loss)
 
 # back transform estimates as response was scaled so there were no 0 or 1 values
-# However, we don't see any difference in the values after back transformation
+# However, we don't see any real difference in the values after back transformation
 n.DRO.0 <- dim(df%>%filter(site  == "DRO" & termite.attack == 0))[1] # 356
 n.DRO.1 <- dim(df%>%filter(site  == "DRO" & termite.attack == 1))[1] # 39
 n.PNW.0 <- dim(df%>%filter(site  == "PNW" & termite.attack == 0))[1] # 207
@@ -299,8 +294,8 @@ ggsave("Graphics/termite.massloss.png", termite, width = 5, height = 5)
 
 ###################################################################
 ## plot mean mass remaining at each time point for each species
-## use only undiscovered blocks as sample size of discovered is too small to plot the same
-## and microbial decay is primarily responsible for decay
+## use only undiscovered blocks as sample size of discovered is small
+## and microbial decay is dominant mechanism
 
 mean.undisc<-df%>%
   filter(termite.attack == 0)%>%
@@ -325,7 +320,6 @@ mean.undisc$Species.Code<-factor(mean.undisc$Species.Code, levels = sp.order)
 
 labels.minor <- c("0\nWet","6\nDry", "12\nWet", "18\nDry", "24\nWet", "30\nDry", "36\nWet", "42\nDry")
 
-# Plotting SE instead of 95% CI
 # Make sure the axis maximum allows for jittering below
 ggList <- lapply(split(mean.undisc, mean.undisc$site), function(i) {
   ggplot(i, aes(x=months, y=(mean.mass.rem), colour=Species.Code, 

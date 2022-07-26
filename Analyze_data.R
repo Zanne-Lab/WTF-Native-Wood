@@ -87,7 +87,7 @@ disc.plot<-df%>%
   filter(termite_treatment_abbreviation=="TI")%>%
   ggplot(aes(x=months, y=termite.attack, colour = site))+
   scale_color_manual(values=c("blue", "red"), labels=c("Rainforest", "Savanna"))+
-  geom_jitter(size=1.5,position=position_jitter(height=0.02, width=1.5))+
+  geom_jitter(size=2,position=position_jitter(height=0.0, width=1.5), alpha = 0.25)+
   geom_line(aes(x=x, y=predicted), data=filter(mth.sp_pred, group=="DRO"), 
             inherit.aes=FALSE, colour="blue")+
   geom_ribbon(aes(x=x, ymin=conf.low, ymax=conf.high), data=filter(mth.sp_pred, group=="DRO"), 
@@ -107,7 +107,9 @@ disc.plot<-df%>%
         legend.justification = c(0,1), legend.position=c(0.02,0.90), 
         legend.key.height= unit(0.1, 'cm'), legend.key.width= unit(0.5, 'cm'),
         legend.title = element_blank(),
-        legend.text = element_text(size=14))+
+        legend.text = element_text(size=14),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
   ggtitle ("B)")
 
 disc.plot
@@ -157,7 +159,7 @@ disc.rate.plot<-disc.rate%>%
   facet_grid(~site, scale= "free", space = "free", 
              labeller = labeller(site = site.labs))+
   ylab("% of TI stems discovered \nby termites") + xlab("Species") + 
-  ylim(0,100) +ggtitle ("A)")+
+  ylim(0,100) + ggtitle ("A)")+
   labs(colour = "Months (season)", fill = "Months (season)")+
   theme_bw(base_size=16) +
   theme(plot.title = element_text(hjust=0, size=18),
@@ -167,7 +169,10 @@ disc.rate.plot<-disc.rate%>%
         axis.title.x=element_text(size=18),
         legend.position="right", 
         legend.title = element_text(size=16),
-        legend.text = element_text(size=16))
+        legend.text = element_text(size=16),
+        #strip.background =element_rect(fill="white"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
 disc.rate.plot
 
 # Figure 1
@@ -266,11 +271,12 @@ termite<-ggplot(marginal1,aes(x = site, y = (emmean.tr*100), group = factor(term
                 position = position_dodge(width = 0.9)) +
   geom_point(size = 3, position = position_dodge(width=0.9), stat = "identity") +
   theme_bw(base_size=16) +
-  scale_colour_manual(values = c("black", "orange"))+
+  scale_colour_manual(values = c("black", "darkorange"), labels = c("No", "Yes")) +
+  scale_shape_discrete(labels = c("No", "Yes")) +
+  labs(colour = "Termite discovery", shape = "Termite discovery")+
   ylab("Mean mass loss (%)") +
   xlab("Site")+
   scale_x_discrete(labels=c("DRO" = "Rainforest", "PNW" = "Savanna"))+
-  labs(colour = "Termite discovery", shape = "Termite discovery")+
   geom_text(
     aes(label = counts, group = factor(termite.attack),
         y=100), 
@@ -282,7 +288,9 @@ termite<-ggplot(marginal1,aes(x = site, y = (emmean.tr*100), group = factor(term
         axis.text.x=element_text(size=16),
         axis.title.y=element_text(size=18),
         axis.title.x=element_text(size=18),
-        legend.position = "top")+
+        legend.position = "top",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
   ylim(0, 100)
 
 # Figure 2
@@ -327,7 +335,7 @@ ggList <- lapply(split(mean.undisc, mean.undisc$site), function(i) {
     geom_line() +
     geom_point(size = 2)+
     scale_shape_manual(values=1:nlevels(mean.undisc$Species.Code))+
-    lightness(scale_color_viridis(discrete = T, option = "D"), scalefac(0.70)) +
+    lightness(scale_color_viridis(discrete = T, option = "H"), scalefac(0.75)) +
     labs(colour = "Species", linetype = "Species", shape = "Species")+
     scale_x_continuous("Months since deployment", limits=c(0, 43), breaks=seq(0, 42, 6), labels = labels.minor)+
     scale_y_continuous("Mass remaining (%)", limits=c(0, 100), breaks=seq(0, 100, 10))+  
@@ -340,7 +348,9 @@ ggList <- lapply(split(mean.undisc, mean.undisc$site), function(i) {
           legend.position="right", 
           legend.title = element_text(size=14),
           legend.key.width= unit(1.5, 'cm'),
-          legend.text = element_text(size=12))})
+          legend.text = element_text(size=12),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank())})
 
 DRO.plot<-ggList$DRO
 PNW.plot<-ggList$PNW
@@ -361,14 +371,15 @@ PNW$Species.Code<-as.factor(PNW$Species.Code)
 DRO.plot2<-DRO.plot +
   geom_point(data = DRO, 
              aes(x=months, y=pct.mass.rem, shape=Species.Code), 
-             colour= "#333333", position = position_jitternudge(nudge.x=0, jitter.width = 1), size = 1, show.legend= F) +
+             colour= "black", position = position_jitternudge(nudge.x=0, jitter.width = 1),
+             size = 2, show.legend= F) +
   ggtitle("A)")
 
 PNW.plot2<-PNW.plot +
   geom_point(data = PNW, 
              aes(x=months, y=pct.mass.rem, shape=Species.Code), 
-             colour= "#333333", position = position_jitternudge(nudge.x=0, jitter.width = 1), 
-             size = 1, show.legend= F) +
+             colour= "black", position = position_jitternudge(nudge.x=0, jitter.width = 1), 
+             size = 2, show.legend= F) +
   theme(axis.title.y=element_blank()) +
   ggtitle("B)")
 
@@ -486,7 +497,7 @@ pca_plot <-
   scale_x_continuous("PC1 (38.9%)", limits=c(-4, 4), breaks=seq(-4, 4, 2))+
   scale_y_continuous("PC2 (26.3%)", limits=c(-3, 3), breaks=seq(-2, 2, 2))+
   labs(colour = "Site", shape = "Site")+
-  theme_light()+
+  theme_bw()+
   theme(plot.title = element_text(hjust=0, size=18),
         axis.text.y=element_text(size=16),
         axis.text.x=element_text(size=16),
@@ -495,7 +506,9 @@ pca_plot <-
         legend.justification = c(0,1), legend.position=c(0.01,0.99), 
         legend.key.height= unit(0.2, 'cm'), legend.key.width= unit(1.5, 'cm'),
         legend.title = element_blank(),
-        legend.text = element_text(size=16)) +
+        legend.text = element_text(size=16),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
   guides(colour = guide_legend(override.aes = list(size=2.5)))+
   ggtitle("A)")
 
@@ -518,7 +531,9 @@ loadings_plot <- pca_load2%>%
         axis.title.x=element_text(size=18),
         strip.text = element_text(size=18),
         legend.text = element_text(size=14),
-        legend.position = "none")+
+        legend.position = "none",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())+
   ggtitle("B)")
 
 loadings_plot

@@ -12,3 +12,8 @@ Natives_processed.csv contains the analysis-ready dataset on wood mass loss and 
 Wood_traits.csv contains the analysis-ready dataset on initial wood traits.
 
 Graphics directory contains graphical output from the Analyze_data.R script.
+<<<<<<< HEAD
+=======
+
+Test again
+>>>>>>> b62bcb349557f049bb9ee07e722cb89a3023f226

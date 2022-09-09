@@ -149,6 +149,9 @@ wtf_out <- wtf %>%
          Fire_Class,termite.attack,season_condition,months,date_diff,station,init_dry_wt,harvest_dry_wt,pct.mass.rem) %>%
   filter(site %in% c("DRO","PNW"))
 
+# Write out tidy datasets to local directory
+write.csv(wtf_out,"Pines_processed.csv", row.names=F, quote = F)
+
 
 ###################################################################
 # tidy (native) wood_weights data set

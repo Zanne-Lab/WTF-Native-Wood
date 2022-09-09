@@ -102,7 +102,6 @@ library(dplyr)
 ###################################################################
 # tidy pine blocks data set
 wtf %>%
-  #mutate(DW_Wood = as.numeric(DW_Wood)) %>%
   filter(!is.na(DW_Wood)) %>%
   select(-site, 
          -treatment_termite,
@@ -117,9 +116,7 @@ wtf %>%
          dry_wt=DW_Wood )%>%
   rowwise() %>%
   mutate(DW_total = sum(c_across(c(dry_wt,DW_Excess)), na.rm = TRUE)) %>%
-  #filter(!is.na(dry_wt)) %>%
   mutate(tag = as.character(tag),
-         #dry_wt_2 = ifelse(!is.na(DW_Excess),sum(dry_wt,DW_Excess), dry_wt),
          date_diff = as.numeric(harvest_date-deployment_date),
          k_value = -(log(DW_total/init_wt)/(date_diff/365.25)),
          mass_remaining = (DW_total)/init_wt,

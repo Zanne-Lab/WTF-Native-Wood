@@ -101,27 +101,23 @@ library(dplyr)
 
 ###################################################################
 # tidy pine blocks data set
-wtf %>%
+wtf_out <- wtf %>%
   filter(!is.na(DW_Wood)) %>%
   select(-site, 
          -treatment_termite,
          -wood_block_number, 
          -Station) %>%
   rename(site = site_new,
-         init_wt = intial_weight_t0,
-         station = block,
-         tag = tag_number, 
-         treatment = termite_treatment_abbreviation, 
-         volume = fresh_volume,
-         dry_wt=DW_Wood )%>%
+         init_dry_wt = intial_weight_t0,
+         SampleID = tag_number,
+         harvest = harvest_number) %>%
   rowwise() %>%
-  mutate(DW_total = sum(c_across(c(dry_wt,DW_Excess)), na.rm = TRUE)) %>%
-  mutate(tag = as.character(tag),
+  mutate(harvest_dry_wt = sum(c_across(c(DW_Wood,DW_Excess)), na.rm = TRUE)) %>%
+  mutate(Species.Code = "PIRA",
          date_diff = as.numeric(harvest_date-deployment_date),
-         k_value = -(log(DW_total/init_wt)/(date_diff/365.25)),
-         mass_remaining = (DW_total)/init_wt,
-         termite_collected = as.character(termite_collected),
-         fire_all = case_when(
+         pct.mass.rem = 100*(harvest_dry_wt)/init_dry_wt,
+         site = replace(site, site=="Penyweight", "PNW"),
+         Fire_Class = case_when(
            Fire_Class ==0~0,
            Fire_Class ==1~1,
            Fire_Class ==2~2,
@@ -134,9 +130,9 @@ wtf %>%
            fire_present_2019==2.5~3,
            fire_present_2021==0~0,
            fire_present_2021==1~1,
-           fire_present_2021==3~3,
+           fire_present_2021==3~3
          ),
-         termite_disc = case_when(
+         termite.attack = case_when(
            termite_present == 1 ~ 1,
            termite_collected == T ~ 1,
            `termites_in/ex_situ` == 1 ~ 1, 
@@ -144,7 +140,14 @@ wtf %>%
            grepl(pattern = "termite damage", x = notes) ~ 1,
            grepl(pattern = "lots of termite activity", x = notes) ~ 1,
            grepl(pattern = "termites!", x = notes) ~ 1,
-           TRUE ~ 0))-> wtf_out #volume from grams to m^3 divide by 1/1000000
+           TRUE ~ 0),
+         months = case_when(harvest == 1 ~ 6, harvest == 2 ~ 12,harvest == 3 ~ 18,
+                            harvest == 4 ~ 24, harvest == 5 ~ 30, harvest == 6 ~ 36,
+                            harvest == 7 ~ 42, harvest == 8 ~ 48),
+         station = interaction(site,Species.Code,block))%>%
+  select(site,SampleID,Species.Code,block,termite_treatment_abbreviation,harvest,deployment_date,harvest_date,
+         Fire_Class,termite.attack,season_condition,months,date_diff,station,init_dry_wt,harvest_dry_wt,pct.mass.rem) %>%
+  filter(site %in% c("DRO","PNW"))
 
 
 ###################################################################

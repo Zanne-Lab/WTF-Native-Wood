@@ -9,7 +9,8 @@ library(readxl)
 # pine block data
 wtf <- drive_get("wtf_radiata_blocks_weight.csv") %>%
   read_sheet(sheet = "wtf_radiata_blocks_weight.csv", col_names=T, trim_ws = T, 
-             na = c("","NA"))
+             na = c("","#N/A", "NA", "-", " ", NULL, "NULL"),
+             col_types = c("ccccccnnnnnDDnnnnnnnnnnnncDncnnnnnncDnnnnnccllll"))
 
 # read in excel sheet of native wood weights and wood density
 wood_weights <- drive_get("Wood_weights_native") %>% 
@@ -22,7 +23,7 @@ wood_density <- drive_get("wood_density_native") %>%
              na = c("","#N/A", "NA", "-", " "))
 
 
-## read in wood chemistry data ##
+# read in wood chemistry data
 wood_chem<-drive_get("Zanne Australia CHN data .xlsx")
 
 dl <- drive_download(
@@ -48,7 +49,7 @@ chem_data<-chem_data %>%
 str(chem_data)
 
 
-## read in wood lignin data ##
+# read in wood lignin data
 d2 <- drive_download(
   as_id("https://docs.google.com/spreadsheets/d/19MKwTMsPVJULJZh4GVmPPGo5uDroq0K4/edit#gid=1258460499"),
   path = 'lignin.xlsx', 
@@ -61,7 +62,7 @@ lignin_data <- read_excel('lignin.xlsx', sheet = "WTF",
 str(lignin_data)
 
 
-## read in wood pH data ##
+# read in wood pH data
 d2 <- drive_download(
   as_id("https://docs.google.com/spreadsheets/d/1b-T8zGE5B3yGudtE4-DgtXmK6QR00rvb/edit#gid=1104479735"),
   path = 'pH.xlsx', 
@@ -74,7 +75,7 @@ pH_data <- read_excel('pH.xlsx',
 str(pH_data)
 
 
-## read in wood ICP data ##
+# read in wood ICP data
 d2 <- drive_download(
   as_id("https://docs.google.com/spreadsheets/d/1YZrp4BbpQDHZ10iqI2vPYqRUeco5OMVL/edit#gid=319770504"),
   path = 'ICP.xlsx', 
@@ -86,7 +87,7 @@ ICP_data <- read_excel('ICP.xlsx',
                        na = c("","#N/A", "NA", "-", " ", NULL, "NULL"))
 str(ICP_data)
 
-## detach these packages as they interfere with dplyr working
+# detach these packages as they interfere with dplyr working
 detach(package:googledrive)
 detach(package:googlesheets4)
 
@@ -96,6 +97,57 @@ detach(package:googlesheets4)
 library(tidyr)
 library(plyr)
 library(dplyr)
+
+
+###################################################################
+# tidy pine blocks data set
+wtf %>%
+  #mutate(DW_Wood = as.numeric(DW_Wood)) %>%
+  filter(!is.na(DW_Wood)) %>%
+  select(-site, 
+         -treatment_termite,
+         -wood_block_number, 
+         -Station) %>%
+  rename(site = site_new,
+         init_wt = intial_weight_t0,
+         station = block,
+         tag = tag_number, 
+         treatment = termite_treatment_abbreviation, 
+         volume = fresh_volume,
+         dry_wt=DW_Wood )%>%
+  rowwise() %>%
+  mutate(DW_total = sum(c_across(c(dry_wt,DW_Excess)), na.rm = TRUE)) %>%
+  #filter(!is.na(dry_wt)) %>%
+  mutate(tag = as.character(tag),
+         #dry_wt_2 = ifelse(!is.na(DW_Excess),sum(dry_wt,DW_Excess), dry_wt),
+         date_diff = as.numeric(harvest_date-deployment_date),
+         k_value = -(log(DW_total/init_wt)/(date_diff/365.25)),
+         mass_remaining = (DW_total)/init_wt,
+         termite_collected = as.character(termite_collected),
+         fire_all = case_when(
+           Fire_Class ==0~0,
+           Fire_Class ==1~1,
+           Fire_Class ==2~2,
+           Fire_Class ==3~3,
+           Fire_Class ==5~5,
+           fire_present_2019==0.0~0,
+           fire_present_2019==1.0~1,
+           fire_present_2019==3.0~3,
+           fire_present_2019==2.0~2,
+           fire_present_2019==2.5~3,
+           fire_present_2021==0~0,
+           fire_present_2021==1~1,
+           fire_present_2021==3~3,
+         ),
+         termite_disc = case_when(
+           termite_present == 1 ~ 1,
+           termite_collected == T ~ 1,
+           `termites_in/ex_situ` == 1 ~ 1, 
+           grepl(pattern = "termite", x = Lab_notes) ~ 1, 
+           grepl(pattern = "termite damage", x = notes) ~ 1,
+           grepl(pattern = "lots of termite activity", x = notes) ~ 1,
+           grepl(pattern = "termites!", x = notes) ~ 1,
+           TRUE ~ 0))-> wtf_out #volume from grams to m^3 divide by 1/1000000
 
 
 ###################################################################

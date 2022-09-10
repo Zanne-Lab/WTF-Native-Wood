@@ -116,6 +116,7 @@ wtf_out <- wtf %>%
   mutate(Species.Code = "PIRA",
          date_diff = as.numeric(harvest_date-deployment_date),
          pct.mass.rem = 100*(harvest_dry_wt)/init_dry_wt,
+         pro.mass.loss = 1 - pct.mass.rem/100,
          site = replace(site, site=="Penyweight", "PNW"),
          Fire_Class = case_when(
            Fire_Class ==0~0,
@@ -146,7 +147,7 @@ wtf_out <- wtf %>%
                             harvest == 7 ~ 42, harvest == 8 ~ 48),
          station = interaction(site,Species.Code,block))%>%
   select(site,SampleID,Species.Code,block,termite_treatment_abbreviation,harvest,deployment_date,harvest_date,
-         Fire_Class,termite.attack,season_condition,months,date_diff,station,init_dry_wt,harvest_dry_wt,pct.mass.rem) %>%
+         Fire_Class,termite.attack,season_condition,months,date_diff,station,init_dry_wt,harvest_dry_wt,pro.mass.loss,pct.mass.rem) %>%
   filter(site %in% c("DRO","PNW"))
 
 # Write out tidy datasets to local directory

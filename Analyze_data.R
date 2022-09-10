@@ -37,8 +37,19 @@ backtransform.est<-function(x,n){
 ###################################################################
 # Read in processed csv data files and check dataset properties
 
-df <- read.csv("Natives_processed.csv")
+natives.df <- read.csv("Natives_processed.csv")
 wood_traits <- read.csv("Wood_traits.csv")
+pine.df <- read.csv("Pines_processed.csv")
+
+# Add pine data to natives data
+df <- natives.df %>%
+  full_join(pine.df)
+
+# Analyze pine data only
+df <- pine.df
+
+# Analyze natives data only
+df <- natives.df
 
 df <- df %>%
   mutate(pro.mass.loss.tr = transform01(pro.mass.loss))

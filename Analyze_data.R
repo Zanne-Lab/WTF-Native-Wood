@@ -55,6 +55,8 @@ df <- df %>%
   mutate(pro.mass.loss.tr = transform01(pro.mass.loss))
 
 nrow(df) # n = 629, 11 blocks removed
+table(df$site,df$harvest,df$termite_treatment_abbreviation)
+# n = 118; 1 TI block lost from each of DRO and PNW at harvest 7
 
 # how many TE bags had evidence of termite.attack? n = 6
 TE.dam<-df%>%
@@ -87,7 +89,7 @@ car::Anova(disc.mod2) # use this for species effect
 ###################################################################
 # Plot using model: discovery ~ months + site binomial data
 
-mth.sp_pred <- ggpredict(disc.mod1, c("months [6:48]", "site"))
+mth.sp_pred <- ggpredict(disc.mod1, c("months [12:42]", "site"))
 
 disc.plot<-df%>%
   filter(termite_treatment_abbreviation=="TI")%>%

@@ -7,7 +7,9 @@ Process_data.R retrieves raw data files from Google Drive folders and tidies the
 
 Analyze_data.R uses the tidy raw data files for statistical analysis and graphics generation.
 
-Natives_processed.csv contains the analysis-ready dataset on wood mass loss and termite discovery.
+Natives_processed.csv contains the analysis-ready dataset on native wood mass loss and termite discovery.
+
+Pines_processed.csv contains the analysis-ready dataset on pine mass loss and termite discovery.
 
 Wood_traits.csv contains the analysis-ready dataset on initial wood traits.
 

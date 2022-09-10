@@ -87,7 +87,7 @@ car::Anova(disc.mod2) # use this for species effect
 ###################################################################
 # Plot using model: discovery ~ months + site binomial data
 
-mth.sp_pred <- ggpredict(disc.mod1, c("months [12:42]", "site"))
+mth.sp_pred <- ggpredict(disc.mod1, c("months [6:48]", "site"))
 
 disc.plot<-df%>%
   filter(termite_treatment_abbreviation=="TI")%>%

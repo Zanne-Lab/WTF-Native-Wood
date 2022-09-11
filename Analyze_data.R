@@ -163,17 +163,15 @@ disc.plot.pine
 
 
 ###################################################################
-## Calculate and plot discovery rate across all harvests for each species 
+# Calculate and plot discovery rate across all harvests for each species 
 
 disc.rate<-all.df%>%
   filter(termite_treatment_abbreviation == "TI")%>%
   group_by(site, months, Species.Code)%>%
   dplyr::summarise(no.rows= length(Species.Code),
                    no.TM = length(which(termite.attack == 1)),
-                   disc.rate = no.TM / no.rows) #%>%
-  #mutate(sum = case_when(Species.Code %in% c("ALSC", "CASU", "MYGL", "EULE", "MEVI") ~ 18,
-  #                       Species.Code %in% c("CAAU", "PEBA") ~ 19, 
-  #                       Species.Code %in% c("NONO", "ROAN", "ARPE", "CLOB", "DYPA", "SYSA", "EUCU", "MEST", "TEAR") ~ 20))
+                   disc.rate = no.TM / no.rows)
+
 sum.species <- disc.rate %>%
   group_by(site,Species.Code) %>%
   dplyr::summarise(sum = sum(no.rows))

@@ -49,8 +49,9 @@ df <- df %>%
   mutate(pro.mass.loss.tr = transform01(pro.mass.loss))
 
 nrow(df) # n = 629, 11 blocks removed
-table(pine.df$site,pine.df$harvest,pine.df$termite_treatment_abbreviation)
+table(pine.df$site,pine.df$months,pine.df$termite_treatment_abbreviation)
 # n = 118; 1 TI block lost from each of DRO and PNW at harvest 7
+table(all.df$site,all.df$months,all.df$termite_treatment_abbreviation,all.df$Species.Code)
 
 # how many native TE stems had evidence of termite.attack? n = 6
 df%>%
@@ -164,25 +165,40 @@ disc.plot.pine
 ###################################################################
 ## Calculate and plot discovery rate across all harvests for each species 
 
-disc.rate<-df%>%
+disc.rate<-all.df%>%
   filter(termite_treatment_abbreviation == "TI")%>%
   group_by(site, months, Species.Code)%>%
   dplyr::summarise(no.rows= length(Species.Code),
                    no.TM = length(which(termite.attack == 1)),
-                   disc.rate = no.TM / no.rows) %>%
-  mutate(sum = case_when(Species.Code %in% c("ALSC", "CASU", "MYGL", "EULE", "MEVI") ~ 18,
-                         Species.Code %in% c("CAAU", "PEBA") ~ 19, 
-                         Species.Code %in% c("NONO", "ROAN", "ARPE", "CLOB", "DYPA", "SYSA", "EUCU", "MEST" , "TEAR") ~ 20))
+                   disc.rate = no.TM / no.rows) #%>%
+  #mutate(sum = case_when(Species.Code %in% c("ALSC", "CASU", "MYGL", "EULE", "MEVI") ~ 18,
+  #                       Species.Code %in% c("CAAU", "PEBA") ~ 19, 
+  #                       Species.Code %in% c("NONO", "ROAN", "ARPE", "CLOB", "DYPA", "SYSA", "EUCU", "MEST", "TEAR") ~ 20))
+sum.species <- disc.rate %>%
+  group_by(site,Species.Code) %>%
+  dplyr::summarise(sum = sum(no.rows))
 
-# Discovery rates by site to report in the paper
-disc.rate.site <- ungroup(disc.rate)%>%
+disc.rate <- disc.rate %>%
+  left_join(sum.species)
+
+# Natives discovery rates by site to report in the paper
+disc.rate.site.native <- disc.rate %>%
+  filter(Species.Code != "PIRA") %>%
   group_by(site)%>%
   dplyr::summarise(no.rows = sum(no.rows), no.TM = sum(no.TM))%>%
   mutate(disc.rate = no.TM/no.rows)
-disc.rate.site
+disc.rate.site.native
+
+# Pine discovery rates by site to report in the paper
+disc.rate.site.pine <- disc.rate %>%
+  filter(Species.Code == "PIRA") %>%
+  group_by(site)%>%
+  dplyr::summarise(no.rows = sum(no.rows), no.TM = sum(no.TM))%>%
+  mutate(disc.rate = no.TM/no.rows)
+disc.rate.site.pine
 
 # Discovery rates by species
-disc.rate.species <- ungroup(disc.rate)%>%
+disc.rate.species <- disc.rate %>%
   group_by(Species.Code)%>%
   dplyr::summarise(no.rows = sum(no.rows), no.TM = sum(no.TM))%>%
   mutate(disc.rate = no.TM/no.rows)%>%
@@ -194,7 +210,7 @@ m.lab<-c("42 (dry)", "36 (wet)", "30 (dry)", "24 (wet)", "18 (dry)", "12 (wet)")
 site.labs <- c("Rainforest", "Savanna")
 names(site.labs) <- c("DRO", "PNW")
 sp.order <- c( "ALSC", "ARPE", "CAAU", "CASU", "CLOB","DYPA", "EUCU", "EULE", 
-               "MEST","MEVI", "MYGL","NONO", "PEBA", "ROAN", "SYSA", "TEAR")
+               "MEST","MEVI", "MYGL","NONO", "PEBA", "ROAN", "SYSA", "TEAR", "PIRA")
 disc.rate$Species.Code<-factor(disc.rate$Species.Code, levels = sp.order)
 
 disc.rate.plot<-disc.rate%>%
@@ -213,7 +229,7 @@ disc.rate.plot<-disc.rate%>%
         axis.text.x=element_text(size=14, angle = 45, vjust = 1, hjust=1),
         axis.title.y=element_text(size=18),
         axis.title.x=element_text(size=18),
-        legend.position="right", 
+        legend.position=c(0.2,0.8), 
         legend.title = element_text(size=16),
         legend.text = element_text(size=16),
         panel.grid.major = element_blank(),

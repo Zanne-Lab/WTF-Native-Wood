@@ -37,32 +37,30 @@ backtransform.est<-function(x,n){
 ###################################################################
 # Read in processed csv data files and check dataset properties
 
-natives.df <- read.csv("Natives_processed.csv")
+df <- read.csv("Natives_processed.csv")
 wood_traits <- read.csv("Wood_traits.csv")
 pine.df <- read.csv("Pines_processed.csv")
 
 # Add pine data to natives data
-df <- natives.df %>%
+all.df <- natives.df %>%
   full_join(pine.df)
-
-# Analyze pine data only
-df <- pine.df
-
-# Analyze natives data only
-df <- natives.df
 
 df <- df %>%
   mutate(pro.mass.loss.tr = transform01(pro.mass.loss))
 
 nrow(df) # n = 629, 11 blocks removed
-table(df$site,df$harvest,df$termite_treatment_abbreviation)
+table(pine.df$site,pine.df$harvest,pine.df$termite_treatment_abbreviation)
 # n = 118; 1 TI block lost from each of DRO and PNW at harvest 7
 
-# how many TE bags had evidence of termite.attack? n = 6
-TE.dam<-df%>%
+# how many native TE stems had evidence of termite.attack? n = 6
+df%>%
   filter(termite_treatment_abbreviation == "TE")%>%
   filter(termite.attack == 1)
-TE.dam
+
+# how many pine TE stems had evidence of termite.attack? n = 1
+pine.df%>%
+  filter(termite_treatment_abbreviation == "TE")%>%
+  filter(termite.attack == 1)
 
 # set species order
 sp.order <- c("CAAU", "NONO", "ROAN", "ALSC", "ARPE", "CASU", "CLOB",
@@ -84,6 +82,12 @@ summary(disc.mod1)
 summary(disc.mod2)
 car::Anova(disc.mod1) # use this for site and time effects
 car::Anova(disc.mod2) # use this for species effect
+
+# For pine data; both site and time are significant
+disc.mod3<-glm(termite.attack~site+months, 
+               data=pine.df[pine.df$termite_treatment_abbreviation == "TI",], family=binomial)
+summary(disc.mod3)
+car::Anova(disc.mod3) # use this for site and time effects
 
 
 ###################################################################
@@ -121,6 +125,40 @@ disc.plot<-df%>%
   ggtitle ("B)")
 
 disc.plot
+
+
+mth.sp_pred.pine <- ggpredict(disc.mod3, c("months [12:42]", "site"))
+
+disc.plot.pine<-pine.df%>%
+  filter(termite_treatment_abbreviation=="TI")%>%
+  ggplot(aes(x=months, y=termite.attack, colour = site))+
+  scale_color_manual(values=c("blue", "red"), labels=c("Rainforest", "Savanna"))+
+  geom_jitter(size=2,position=position_jitter(height=0.0, width=1.5), alpha = 0.25)+
+  geom_line(aes(x=x, y=predicted), data=filter(mth.sp_pred.pine, group=="DRO"), 
+            inherit.aes=FALSE, colour="blue")+
+  geom_ribbon(aes(x=x, ymin=conf.low, ymax=conf.high), data=filter(mth.sp_pred.pine, group=="DRO"), 
+              inherit.aes=FALSE, alpha=0.15, linetype='dashed', colour="blue", fill="blue") +
+  geom_line(aes(x=x, y=predicted), data=filter(mth.sp_pred.pine, group=="PNW"), 
+            inherit.aes=FALSE, colour="red")+
+  geom_ribbon(aes(x=x, ymin=conf.low, ymax=conf.high), data=filter(mth.sp_pred.pine, group=="PNW"), 
+              inherit.aes=FALSE, alpha=0.25, linetype='dashed', colour="red", fill="red")+
+  xlab("Months")+ 
+  ylab("Discovery") + 
+  theme_bw(base_size=16) +
+  theme(plot.title = element_text(hjust=0, size=18),
+        axis.text.y=element_text(size=16),
+        axis.text.x=element_text(size=16),
+        axis.title.y=element_text(size=18),
+        axis.title.x=element_text(size=18),
+        legend.justification = c(0,1), legend.position=c(0.02,0.90), 
+        legend.key.height= unit(0.1, 'cm'), legend.key.width= unit(0.5, 'cm'),
+        legend.title = element_blank(),
+        legend.text = element_text(size=14),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  ggtitle ("Pine block data")
+
+disc.plot.pine
 
 
 ###################################################################

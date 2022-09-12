@@ -22,17 +22,6 @@ library(shades)
 library(broom)
 library(corrplot)
 
-# functions to transform and back transform proportions to remove 0 and 1
-
-transform01<-function(x){
-  (x * (length (x)-1)+ 0.5) / (length(x))
-}
-
-backtransform.est<-function(x,n){
-  y<-(x*n-0.5)/(n-1)
-  return(y)
-}
-
 
 ###################################################################
 # Read in processed csv data files and check dataset properties
@@ -44,9 +33,6 @@ pine.df <- read.csv("Pines_processed.csv")
 # Add pine data to natives data
 all.df <- natives.df %>%
   full_join(pine.df)
-
-df <- df %>%
-  mutate(pro.mass.loss.tr = transform01(pro.mass.loss))
 
 nrow(df) # n = 629, 11 blocks removed
 table(pine.df$site,pine.df$months,pine.df$termite_treatment_abbreviation)
@@ -160,6 +146,7 @@ disc.plot.pine<-pine.df%>%
   ggtitle ("Pine block data")
 
 disc.plot.pine
+ggsave("Graphics/DiscoveryPine.png", disc.plot.pine)
 
 
 ###################################################################
@@ -240,91 +227,88 @@ ggsave("Graphics/Discovery.png", g, width = 15, height = 7)
 
 
 ###################################################################
-## testing if termites accelerate decomposition more in the savanna compared with the rainforest
-## beta regression models on prop. mass loss
-## looking at effects of discovery and site on mass loss (included station as a random factor)
+# testing if termites accelerate decomposition more in the savanna compared with the rainforest
+# beta regression models on prop. mass loss
+# looking at effects of discovery and site on mass loss (included station as a random factor)
 
-beta.ran<-glmmTMB(pro.mass.loss.tr ~ termite.attack+site+months + (1|station), 
-                  data=df, family=beta_family(link="logit"))
+# Generate a list object analogous to make.link() for custom transformation to remove 0 and 1
+# Transformation: y = (x*(n-1)+0.5)/n; y*n-0.5 = x*(n-1); x = (y*n-0.5)/(n-1)
+# Inverse: x = (y*n-0.5)/(n-1)
+# Derivative: n/(n-1)
+scale.tran <- list(
+  linkfun = function(mu) (mu*(629-1)+0.5)/629,
+  linkinv = function(eta) (eta*629-0.5)/(629-1), 
+  mu.eta = function(eta) 629/(629-1),
+  name = "scale.proportion"
+)
+
+scale.tran.pine <- list(
+  linkfun = function(mu) (mu*(118-1)+0.5)/118,
+  linkinv = function(eta) (eta*118-0.5)/(118-1), 
+  mu.eta = function(eta) 118/(118-1),
+  name = "scale.proportion"
+)
+
+beta.ran<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack+site+as.factor(months) + (1|station), 
+                  data=df, family=beta_family(link="logit")))
 summary(beta.ran)
 
-beta.ran2<-glmmTMB(pro.mass.loss.tr ~ termite.attack*site+months + (1|station), 
-                   data=df, family=beta_family(link="logit"))
+beta.ran0<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack+site+as.factor(months), 
+                  data=df, family=beta_family(link="logit")))
+summary(beta.ran0)
+
+beta.ran1<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack+site+months, 
+                  data=df, family=beta_family(link="logit")))
+summary(beta.ran1)
+
+beta.ran2<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*site+as.factor(months) + (1|station), 
+                   data=df, family=beta_family(link="logit")))
 summary(beta.ran2)
 
-beta.ran3<-glmmTMB(pro.mass.loss.tr ~ termite.attack*site+termite.attack*months + (1|station), 
-                   data=df, family=beta_family(link="logit"))
+beta.ran3<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*site+termite.attack*as.factor(months) + (1|station), 
+                   data=df, family=beta_family(link="logit")))
 summary(beta.ran3)
 
-beta.ran4<-glmmTMB(pro.mass.loss.tr ~ termite.attack*Species.Code + months, 
-                   data=df, family=beta_family(link="logit"))
+beta.ran4<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*Species.Code + as.factor(months), 
+                   data=df, family=beta_family(link="logit")))
 summary(beta.ran4)
 
-lmtest::lrtest(beta.ran, beta.ran2, beta.ran3)
-AIC(beta.ran, beta.ran2, beta.ran3)
+# Clearly better to include station as a random factor and months as categorical
+lmtest::lrtest(beta.ran, beta.ran0, beta.ran1, beta.ran2, beta.ran3)
+AIC(beta.ran, beta.ran0, beta.ran1, beta.ran2, beta.ran3)
 
-# Model 3 offers no improvement because there is no interaction between termite attack and time
-# Using model 2
-glmmTMB:::Anova.glmmTMB(beta.ran2)
-performance::r2(beta.ran2)
-
-# pairwise comparisons by site, proportional to the frequencies of discovered stems
-sitecomp <- emmeans(beta.ran2,~ site, type = "response", weights = "proportional")
-sitecomp
-pairs(sitecomp, adjust="tukey")
-
-# comparisons for discovered, undiscovered within each site
-marginal <- emmeans(beta.ran2,~ termite.attack:site, type = "response", weights = "proportional")
-pairs(marginal, adjust="tukey")
-marginal1<-as.data.frame(marginal)
-marginal1
+# Interactions are significant so model 3 is best
+glmmTMB:::Anova.glmmTMB(beta.ran3)
+glmmTMB:::Anova.glmmTMB(beta.ran4)
 
 # marginal mean damage effect by species
-marginal.species <- as.data.frame(emmeans(beta.ran4,~ termite.attack:Species.Code, type = "response"))
-damage.by.species <- marginal.species%>%
+# Need to resolve the back-transformation approach
+marginal.species <- summary(emmeans(beta.ran4,~ termite.attack:Species.Code, type = "response", weights = "proportional"))
+damage.by.species <- as.data.frame(marginal.species)%>%
   pivot_wider(id_cols = Species.Code, names_from = termite.attack, values_from = response, names_prefix = "D")%>%
   mutate(damage.index = 100*(D1-D0)/D1)%>%
   select(Species.Code,damage.index)
 damage.by.species
 
-# range in mass loss for discovered stems
-a<-df%>%
-  filter(termite.attack == 0)%>%
-  filter(site=="DRO")%>%
-  filter(months==42)
+# pairwise comparisons by site, proportional to the frequencies of discovered stems
+sitecomp <- emmeans(beta.ran3,~ site, type = "response", weights = "proportional")
+pairs(sitecomp, adjust="tukey")
+sitecomp
 
-range(a$pro.mass.loss)
+# comparisons for discovered, undiscovered within each site
+# counts for plotting
+term.by.site <- emmeans(beta.ran3,~ termite.attack:site, type = "response", weights = "proportional")
+pairs(term.by.site, adjust="tukey")
+counts <- as.data.frame(table("site"=df$site,"termite.attack"=df$termite.attack),stringsAsFactors=F) %>%
+  mutate(termite.attack=as.integer(termite.attack))
+term.by.site.df <- as.data.frame(summary(term.by.site)) %>%
+  left_join(counts)
+term.by.site.df
 
-# back transform estimates as response was scaled so there were no 0 or 1 values
-# However, we don't see any real difference in the values after back transformation
-n.DRO.0 <- dim(df%>%filter(site  == "DRO" & termite.attack == 0))[1] # 356
-n.DRO.1 <- dim(df%>%filter(site  == "DRO" & termite.attack == 1))[1] # 39
-n.PNW.0 <- dim(df%>%filter(site  == "PNW" & termite.attack == 0))[1] # 207
-n.PNW.1 <- dim(df%>%filter(site  == "PNW" & termite.attack == 1))[1] # 27
-
-marginal1<-marginal1%>%
-  mutate(emmean.tr = case_when(site  == "DRO" & termite.attack == 0 ~ backtransform.est(response, n.DRO.0),
-                               site  == "DRO" & termite.attack == 1 ~ backtransform.est(response, n.DRO.1),
-                               site  == "PNW" & termite.attack == 0 ~ backtransform.est(response, n.PNW.0),
-                               site  == "PNW" & termite.attack == 1 ~ backtransform.est(response, n.PNW.1)))%>%
-  mutate(lower.SE.tr = case_when(site  == "DRO" & termite.attack == 0 ~ backtransform.est(response-SE, n.DRO.0),
-                                 site  == "DRO" & termite.attack == 1 ~ backtransform.est(response-SE, n.DRO.1),
-                                 site  == "PNW" & termite.attack == 0 ~ backtransform.est(response-SE, n.PNW.0),
-                                 site  == "PNW" & termite.attack == 1 ~ backtransform.est(response-SE, n.PNW.1)))%>%
-  mutate(upper.SE.tr = case_when(site  == "DRO" & termite.attack == 0 ~ backtransform.est(response+SE, n.DRO.0),
-                                 site  == "DRO" & termite.attack == 1 ~ backtransform.est(response+SE, n.DRO.1),
-                                 site  == "PNW" & termite.attack == 0 ~ backtransform.est(response+SE, n.PNW.0),
-                                 site  == "PNW" & termite.attack == 1 ~ backtransform.est(response+SE, n.PNW.1)))%>%
-  mutate(counts = case_when(site  == "DRO" & termite.attack == 0 ~ n.DRO.0,
-                            site  == "DRO" & termite.attack == 1 ~ n.DRO.1,
-                            site  == "PNW" & termite.attack == 0 ~ n.PNW.0,
-                            site  == "PNW" & termite.attack == 1 ~ n.PNW.1))
-marginal1
-
-termite<-ggplot(marginal1,aes(x = site, y = (emmean.tr*100), group = factor(termite.attack),
+termite<-ggplot(term.by.site.df,aes(x = site, y = (response*100), group = factor(termite.attack),
                               colour = factor(termite.attack), shape = factor(termite.attack)))+
-  geom_errorbar(aes(ymin = (lower.SE.tr*100),
-                    ymax = (upper.SE.tr*100)),
+  geom_errorbar(aes(ymin = ((response-SE)*100),
+                    ymax = ((response+SE)*100)),
                 width = 0.2,
                 size  = 0.5,
                 position = position_dodge(width = 0.9)) +
@@ -337,7 +321,7 @@ termite<-ggplot(marginal1,aes(x = site, y = (emmean.tr*100), group = factor(term
   xlab("Site")+
   scale_x_discrete(labels=c("DRO" = "Rainforest", "PNW" = "Savanna"))+
   geom_text(
-    aes(label = counts, group = factor(termite.attack),
+    aes(label = Freq, group = factor(termite.attack),
         y=100), 
     position = position_dodge(0.8),
     size = 4, show.legend = F)+
@@ -361,6 +345,14 @@ ggsave("Graphics/termite.massloss.png", termite, width = 5, height = 5)
 ## plot mean mass remaining at each time point for each species
 ## use only undiscovered blocks as sample size of discovered is small
 ## and microbial decay is dominant mechanism
+
+# range in mass loss for stems
+a<-df%>%
+  filter(termite.attack == 0)%>%
+  filter(site=="DRO")%>%
+  filter(months==42)
+
+range(a$pro.mass.loss)
 
 mean.undisc<-df%>%
   filter(termite.attack == 0)%>%

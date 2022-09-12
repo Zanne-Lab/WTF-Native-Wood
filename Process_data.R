@@ -105,11 +105,11 @@ wtf_out <- wtf %>%
   filter(!is.na(DW_Wood)) %>%
   select(-site, 
          -treatment_termite,
-         -wood_block_number, 
+         -tag_number, 
          -Station) %>%
   rename(site = site_new,
          init_dry_wt = intial_weight_t0,
-         SampleID = tag_number,
+         SampleID = wood_block_number,
          harvest = harvest_number) %>%
   rowwise() %>%
   mutate(harvest_dry_wt = sum(c_across(c(DW_Wood,DW_Excess)), na.rm = TRUE)) %>%

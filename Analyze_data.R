@@ -274,13 +274,31 @@ beta.ran4<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*Speci
                    data=df, family=beta_family(link="logit")))
 summary(beta.ran4)
 
-# Clearly better to include station as a random factor and months as categorical
+# With pine dataset; model does not converge with months as categorical
+beta.ran5<-with(scale.tran.pine,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*site+termite.attack*months,
+                                   data=pine.df, family=beta_family(link="logit")))
+summary(beta.ran5)
+
+beta.ran6<-with(scale.tran.pine,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*site+termite.attack*months + (1|station), 
+                                        data=pine.df, family=beta_family(link="logit")))
+summary(beta.ran6)
+
+# Clearly better to include station as a random factor and months as categorical for natives data
 lmtest::lrtest(beta.ran, beta.ran0, beta.ran1, beta.ran2, beta.ran3)
 AIC(beta.ran, beta.ran0, beta.ran1, beta.ran2, beta.ran3)
 
+# Including the random effect is better for pine data
+lmtest::lrtest(beta.ran5, beta.ran6)
+AIC(beta.ran5, beta.ran6)
+
 # Interactions are significant so model 3 is best
 glmmTMB:::Anova.glmmTMB(beta.ran3)
+
+# Testing the species effect
 glmmTMB:::Anova.glmmTMB(beta.ran4)
+
+# Tests for pine data; interactions are not significant
+glmmTMB:::Anova.glmmTMB(beta.ran6)
 
 # marginal mean damage effect by species
 # emmeans back-transforms automatically using the scale.tran functions
@@ -296,6 +314,11 @@ sitecomp <- emmeans(beta.ran3,~ site, type = "response", weights = "proportional
 pairs(sitecomp, adjust="tukey")
 sitecomp
 
+# pairwise comparisons by site, proportional to the frequencies of discovered stems (for pine)
+sitecomp.pine <- emmeans(beta.ran6,~ site, type = "response", weights = "proportional")
+pairs(sitecomp.pine, adjust="tukey")
+sitecomp.pine
+
 # comparisons for discovered, undiscovered within each site
 # counts for plotting
 term.by.site <- emmeans(beta.ran3,~ termite.attack:site, type = "response", weights = "proportional")
@@ -305,6 +328,16 @@ counts <- as.data.frame(table("site"=df$site,"termite.attack"=df$termite.attack)
 term.by.site.df <- as.data.frame(summary(term.by.site)) %>%
   left_join(counts)
 term.by.site.df
+
+# comparisons for discovered, undiscovered within each site
+# counts for plotting
+term.by.site.pine <- emmeans(beta.ran6,~ termite.attack:site, type = "response", weights = "proportional")
+pairs(term.by.site.pine, adjust="tukey")
+counts <- as.data.frame(table("site"=pine.df$site,"termite.attack"=pine.df$termite.attack),stringsAsFactors=F) %>%
+  mutate(termite.attack=as.integer(termite.attack))
+term.by.site.pine.df <- as.data.frame(summary(term.by.site.pine)) %>%
+  left_join(counts)
+term.by.site.pine.df
 
 # significant termite effect at 12, 30, 36, and 42 months but not 18 or 24 months
 term.by.time <- emmeans(beta.ran3,~ termite.attack:as.factor(months), type = "response", weights = "proportional")
@@ -346,6 +379,42 @@ termite<-ggplot(term.by.site.df,aes(x = site, y = (response*100), group = factor
 termite
 ggsave("Graphics/termite.massloss.png", termite, width = 5, height = 5)
 
+
+termite.pine<-ggplot(term.by.site.pine.df,aes(x = site, y = (response*100), group = factor(termite.attack),
+                                    colour = factor(termite.attack), shape = factor(termite.attack)))+
+  geom_errorbar(aes(ymin = ((response-SE)*100),
+                    ymax = ((response+SE)*100)),
+                width = 0.2,
+                size  = 0.5,
+                position = position_dodge(width = 0.9)) +
+  geom_point(size = 3, position = position_dodge(width=0.9), stat = "identity") +
+  theme_bw(base_size=16) +
+  scale_colour_manual(values = c("black", "darkorange"), labels = c("No", "Yes")) +
+  scale_shape_discrete(labels = c("No", "Yes")) +
+  labs(colour = "Termite discovery", shape = "Termite discovery")+
+  ylab("Mean mass loss (%)") +
+  xlab("Site")+
+  scale_x_discrete(labels=c("DRO" = "Rainforest", "PNW" = "Savanna"))+
+  geom_text(
+    aes(label = Freq, group = factor(termite.attack),
+        y=100), 
+    position = position_dodge(0.8),
+    size = 4, show.legend = F)+
+  theme_bw(base_size=16) +
+  theme(plot.title = element_text(hjust=0, size=18),
+        axis.text.y=element_text(size=16),
+        axis.text.x=element_text(size=16),
+        axis.title.y=element_text(size=18),
+        axis.title.x=element_text(size=18),
+        legend.position = "top",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  ylim(0, 100) +
+  ggtitle ("Pine block data")
+
+# SI figure
+termite.pine
+ggsave("Graphics/termite.massloss.pine.png", termite.pine, width = 5, height = 5)
 
 ###################################################################
 ## plot mean mass remaining at each time point for each species

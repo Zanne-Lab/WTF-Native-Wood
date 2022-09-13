@@ -31,12 +31,12 @@ wood_traits <- read.csv("Wood_traits.csv")
 pine.df <- read.csv("Pines_processed.csv")
 
 # Add pine data to natives data
-all.df <- natives.df %>%
+all.df <- df %>%
   full_join(pine.df)
 
 nrow(df) # n = 629, 11 blocks removed
-table(pine.df$site,pine.df$months,pine.df$termite_treatment_abbreviation)
 # n = 118; 1 TI block lost from each of DRO and PNW at harvest 7
+table(pine.df$site,pine.df$months,pine.df$termite_treatment_abbreviation)
 table(all.df$site,all.df$months,all.df$termite_treatment_abbreviation,all.df$Species.Code)
 
 # how many native TE stems had evidence of termite.attack? n = 6
@@ -56,10 +56,11 @@ df$Species.Code<-factor(df$Species.Code, levels = sp.order)
 
 
 ###################################################################
-## testing if discovery rate of deadwood by termites is greater in savanna compared with rainforest
-## looking at effects of site, time (months since deployment) and species on discovery (termite attack)
-## binomial model testing site, time (months), and species on termite discovery
-## can't include interaction because of nesting of species within site
+# testing if discovery rate of deadwood by termites is greater in savanna compared with rainforest
+# looking at effects of site, time (months since deployment) and species on discovery (termite attack)
+# binomial model testing site, time (months), and species on termite discovery
+# can't include interaction because of nesting of species within site
+# checked AIC with months as categorical, but no improvement, so sticking with continuous time
 
 disc.mod1<-glm(termite.attack~site+months, 
                  data=df[df$termite_treatment_abbreviation == "TI",], family=binomial)
@@ -282,7 +283,7 @@ glmmTMB:::Anova.glmmTMB(beta.ran3)
 glmmTMB:::Anova.glmmTMB(beta.ran4)
 
 # marginal mean damage effect by species
-# Need to resolve the back-transformation approach
+# emmeans back-transforms automatically using the scale.tran functions
 marginal.species <- summary(emmeans(beta.ran4,~ termite.attack:Species.Code, type = "response", weights = "proportional"))
 damage.by.species <- as.data.frame(marginal.species)%>%
   pivot_wider(id_cols = Species.Code, names_from = termite.attack, values_from = response, names_prefix = "D")%>%
@@ -304,6 +305,11 @@ counts <- as.data.frame(table("site"=df$site,"termite.attack"=df$termite.attack)
 term.by.site.df <- as.data.frame(summary(term.by.site)) %>%
   left_join(counts)
 term.by.site.df
+
+# significant termite effect at 12, 30, 36, and 42 months but not 18 or 24 months
+term.by.time <- emmeans(beta.ran3,~ termite.attack:as.factor(months), type = "response", weights = "proportional")
+contrast(term.by.time, simple="termite.attack", adjust="sidak")
+term.by.time
 
 termite<-ggplot(term.by.site.df,aes(x = site, y = (response*100), group = factor(termite.attack),
                               colour = factor(termite.attack), shape = factor(termite.attack)))+

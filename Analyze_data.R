@@ -28,14 +28,15 @@ library(corrplot)
 
 df <- read.csv("Natives_processed.csv")
 wood_traits <- read.csv("Wood_traits.csv")
-pine.df <- read.csv("Pines_processed.csv")
+pine.df <- read.csv("Pines_processed.csv") %>%
+  filter(!(SampleID %in% c(48,256))) # remove burned blocks
 
 # Add pine data to natives data
 all.df <- df %>%
   full_join(pine.df)
 
 nrow(df) # n = 629, 11 blocks removed
-# n = 118; 1 TI block lost from each of DRO and PNW at harvest 7
+# n = 116; 1 TI block lost from each of DRO and PNW at harvest 7; 1 PNW TE block burned at each of 36 and 42 months
 table(pine.df$site,pine.df$months,pine.df$termite_treatment_abbreviation)
 table(all.df$site,all.df$months,all.df$termite_treatment_abbreviation,all.df$Species.Code)
 
@@ -244,9 +245,9 @@ scale.tran <- list(
 )
 
 scale.tran.pine <- list(
-  linkfun = function(mu) (mu*(118-1)+0.5)/118,
-  linkinv = function(eta) (eta*118-0.5)/(118-1), 
-  mu.eta = function(eta) 118/(118-1),
+  linkfun = function(mu) (mu*(116-1)+0.5)/116,
+  linkinv = function(eta) (eta*116-0.5)/(116-1), 
+  mu.eta = function(eta) 116/(116-1),
   name = "scale.proportion"
 )
 
@@ -421,21 +422,13 @@ ggsave("Graphics/termite.massloss.pine.png", termite.pine, width = 5, height = 5
 ## use only undiscovered blocks as sample size of discovered is small
 ## and microbial decay is dominant mechanism
 
-# range in mass loss for stems
-a<-df%>%
+mean.undisc<-all.df%>%
   filter(termite.attack == 0)%>%
-  filter(site=="DRO")%>%
-  filter(months==42)
-
-range(a$pro.mass.loss)
-
-mean.undisc<-df%>%
-  filter(termite.attack == 0)%>%
-  add_row(months = rep(0, times = 16), 
-          Species.Code = c("CAAU", "NONO", "ROAN", "ALSC", "ARPE", "CASU", "CLOB", "DYPA",
-                           "MYGL", "SYSA", "EUCU", "EULE", "MEST", "MEVI", "PEBA", "TEAR"),
-          site = rep(c("DRO", "PNW"), times = c(10, 6)),
-          pct.mass.rem = rep(100, times = 16))%>% # add a point for time months == 0
+  add_row(months = rep(0, times = 18), 
+          Species.Code = c("CAAU", "NONO", "ROAN", "ALSC", "ARPE", "CASU", "CLOB", "DYPA", "MYGL", "SYSA", "PIRA",
+                           "EUCU", "EULE", "MEST", "MEVI", "PEBA", "TEAR", "PIRA"),
+          site = rep(c("DRO", "PNW"), times = c(11, 7)),
+          pct.mass.rem = rep(100, times = 18))%>% # add a point for time months == 0
   group_by(months, Species.Code, site) %>%
   dplyr::summarise(mean.mass.rem = mean(pct.mass.rem, na.rm = TRUE),
                    sd.mass.rem = sd(pct.mass.rem, na.rm=TRUE),
@@ -447,7 +440,7 @@ mean.undisc<-df%>%
   print(n=Inf)
 
 sp.order <- c( "ALSC", "ARPE", "CAAU", "CASU", "CLOB","DYPA", "EUCU", "EULE", 
-               "MEST","MEVI", "MYGL","NONO", "PEBA", "ROAN", "SYSA", "TEAR")
+               "MEST","MEVI", "MYGL","NONO", "PEBA", "ROAN", "SYSA", "TEAR", "PIRA")
 mean.undisc$Species.Code<-factor(mean.undisc$Species.Code, levels = sp.order)
 
 labels.minor <- c("0\nWet","6\nDry", "12\nWet", "18\nDry", "24\nWet", "30\nDry", "36\nWet", "42\nDry")
@@ -480,13 +473,14 @@ ggList <- lapply(split(mean.undisc, mean.undisc$site), function(i) {
 DRO.plot<-ggList$DRO
 PNW.plot<-ggList$PNW
 
-# plot discovered blocks in the background for visual comparison 
+# plot discovered blocks in the background for visual comparison
+# replace all.df with df to remove PIRA points if desired
 
-DRO<-df%>%
+DRO<-all.df%>%
   filter(termite.attack == 1)%>%
   filter(site=="DRO")
 
-PNW<-df%>%
+PNW<-all.df%>%
   filter(termite.attack == 1)%>%
   filter(site=="PNW")
 

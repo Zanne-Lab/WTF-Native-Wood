@@ -149,7 +149,8 @@ wtf_out <- wtf %>%
   select(site,SampleID,Species.Code,block,termite_treatment_abbreviation,harvest,deployment_date,harvest_date,
          Fire_Class,termite.attack,season_condition,months,date_diff,station,init_dry_wt,harvest_dry_wt,pro.mass.loss,pct.mass.rem) %>%
   filter(site %in% c("DRO","PNW")) %>%
-  filter(months %in% c(12,18,24,30,36,42))
+  filter(months %in% c(12,18,24,30,36,42)) %>%
+  filter(!(SampleID %in% c(48,256))) # remove burned blocks
 
 # Write out tidy datasets to local directory
 write.csv(wtf_out,"Pines_processed.csv", row.names=F, quote = F)

@@ -28,8 +28,7 @@ library(corrplot)
 
 df <- read.csv("Natives_processed.csv")
 wood_traits <- read.csv("Wood_traits.csv")
-pine.df <- read.csv("Pines_processed.csv") %>%
-  filter(!(SampleID %in% c(48,256))) # remove burned blocks
+pine.df <- read.csv("Pines_processed.csv")
 
 # Add pine data to natives data
 all.df <- df %>%
@@ -148,6 +147,7 @@ disc.plot.pine<-pine.df%>%
   ggtitle ("Pine block data")
 
 disc.plot.pine
+# can include as a supplemental figure
 ggsave("Graphics/DiscoveryPine.png", disc.plot.pine)
 
 
@@ -275,6 +275,10 @@ beta.ran4<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*Speci
                    data=df, family=beta_family(link="logit")))
 summary(beta.ran4)
 
+beta.ran4.all<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*Species.Code + as.factor(months), 
+                                   data=all.df, family=beta_family(link="logit")))
+summary(beta.ran4.all)
+
 # With pine dataset; model does not converge with months as categorical
 beta.ran5<-with(scale.tran.pine,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*site+termite.attack*months,
                                    data=pine.df, family=beta_family(link="logit")))
@@ -295,15 +299,17 @@ AIC(beta.ran5, beta.ran6)
 # Interactions are significant so model 3 is best
 glmmTMB:::Anova.glmmTMB(beta.ran3)
 
-# Testing the species effect
+# Testing the species effect: no pine included
 glmmTMB:::Anova.glmmTMB(beta.ran4)
+# Testing the species effect with pine included
+glmmTMB:::Anova.glmmTMB(beta.ran4.all)
 
 # Tests for pine data; interactions are not significant
 glmmTMB:::Anova.glmmTMB(beta.ran6)
 
 # marginal mean damage effect by species
 # emmeans back-transforms automatically using the scale.tran functions
-marginal.species <- summary(emmeans(beta.ran4,~ termite.attack:Species.Code, type = "response", weights = "proportional"))
+marginal.species <- summary(emmeans(beta.ran4.all,~ termite.attack:Species.Code, type = "response", weights = "proportional"))
 damage.by.species <- as.data.frame(marginal.species)%>%
   pivot_wider(id_cols = Species.Code, names_from = termite.attack, values_from = response, names_prefix = "D")%>%
   mutate(damage.index = 100*(D1-D0)/D1)%>%
@@ -410,8 +416,7 @@ termite.pine<-ggplot(term.by.site.pine.df,aes(x = site, y = (response*100), grou
         legend.position = "top",
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
-  ylim(0, 100) +
-  ggtitle ("Pine block data")
+  ylim(0, 100)
 
 # SI figure
 termite.pine

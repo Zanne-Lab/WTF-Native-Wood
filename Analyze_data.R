@@ -143,8 +143,7 @@ disc.plot.pine<-pine.df%>%
         legend.title = element_blank(),
         legend.text = element_text(size=14),
         panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank()) +
-  ggtitle ("Pine block data")
+        panel.grid.minor = element_blank())
 
 disc.plot.pine
 # can include as a supplemental figure
@@ -703,3 +702,4 @@ summary(model.disc2)
 # Nothing significant
 model.damage <- lm(damage.index ~ PC1 + PC2, data = df.species)
 summary(model.damage)
+

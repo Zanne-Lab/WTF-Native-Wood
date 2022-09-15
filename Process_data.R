@@ -7,10 +7,14 @@ library(readxl)
 
 # read in data from google drive; will be asked to authorise access to google drive
 # pine block data
-wtf <- drive_get("wtf_radiata_blocks_weight.csv") %>%
+pine <- drive_get("wtf_radiata_blocks_weight.csv") %>%
   read_sheet(sheet = "wtf_radiata_blocks_weight.csv", col_names=T, trim_ws = T, 
              na = c("","#N/A", "NA", "-", " ", NULL, "NULL"),
              col_types = c("ccccccnnnnnDDnnnnnnnnnnnncDncnnnnnncDnnnnnccllll"))
+
+pine.init <- drive_get("wtf_radiata_blocks_weight.csv") %>%
+  read_sheet(sheet = "radiata_initial_weights", col_names=T, trim_ws = T, 
+             na = c("","#N/A", "NA", "-", " ", NULL, "NULL"))
 
 # read in excel sheet of native wood weights and wood density
 wood_weights <- drive_get("Wood_weights_native") %>% 
@@ -101,7 +105,7 @@ library(dplyr)
 
 ###################################################################
 # tidy pine blocks data set
-wtf_out <- wtf %>%
+pine.out <- pine %>%
   filter(!is.na(DW_Wood)) %>%
   select(-site, 
          -treatment_termite,
@@ -153,7 +157,7 @@ wtf_out <- wtf %>%
   filter(!(SampleID %in% c(48,256))) # remove burned blocks
 
 # Write out tidy datasets to local directory
-write.csv(wtf_out,"Pines_processed.csv", row.names=F, quote = F)
+write.csv(pine.out,"Pines_processed.csv", row.names=F, quote = F)
 
 
 ###################################################################
@@ -200,15 +204,18 @@ wood_weights<-as.data.frame(lapply(wood_weights, unlist))%>%
 str(wood_weights)
 nrow(wood_weights)
 
-# 3) get initial dry weight info from wood_density, combine, subset dataframes and calculate dry weights
-
 # convert initial wet weights to dry weights data, and calculate mean density
+pine.density <- as.numeric(pine.init %>%
+  filter(is.na(Comments),drying_temperature==100) %>%
+  summarise(pine.density = mean(initial_dry_mass)))/(9*9*5)
+
 int_wood <- wood_density %>%
   mutate(drywt = oven_dry_mass/green_weight) %>%  ## calculates the fraction of dry weight for each initial log
   group_by(species) %>%
   dplyr::summarise(wood_density = mean(wood_density_oven_dry, na.rm = TRUE),
                    init_drywt_fraction = mean(drywt, na.rm=TRUE)) %>%
   dplyr::rename(Species.Code = species)%>%
+  add_row(Species.Code="PIRA", wood_density=pine.density, init_drywt_fraction=NA) %>%
   print(n=Inf)
 
 ###################################################################
@@ -217,7 +224,6 @@ int_wood <- wood_density %>%
 # calculate mean N and C percentage for each species
 
 chem_data<-chem_data%>%
-  slice(1:32)%>%
   mutate(AustralianSampleCodes...4 = replace(AustralianSampleCodes...4, AustralianSampleCodes...4 == "F1.1", "P1.1"))%>% # typo changed
   mutate(Species.Code = case_when(AustralianSampleCodes...4 == "A3.8" | AustralianSampleCodes...4 == "A2.7" ~ "DYPA",
                                   AustralianSampleCodes...4 == "B2.1" | AustralianSampleCodes...4 == "B1.10" ~ "MYGL",
@@ -234,7 +240,8 @@ chem_data<-chem_data%>%
                                   AustralianSampleCodes...4 == "M5.9" | AustralianSampleCodes...4 == "M1.6" ~ "MEST",
                                   AustralianSampleCodes...4 == "N4.7" | AustralianSampleCodes...4 == "N1.11" ~ "MEVI",
                                   AustralianSampleCodes...4 == "O6.5" | AustralianSampleCodes...4 == "O3.8" ~ "PEBA",
-                                  AustralianSampleCodes...4 == "P1.1" | AustralianSampleCodes...4 == "P2.23" ~ "ROAN"))%>%
+                                  AustralianSampleCodes...4 == "P1.1" | AustralianSampleCodes...4 == "P2.23" ~ "ROAN",
+                                  Sample.ID %in% c("W33","W34","W35","W36","W37") ~ "PIRA"))%>%
   group_by(Species.Code)%>%
   dplyr::summarise(mean.C.perc = mean(Carbon_perc),
                    mean.N.perc = mean(Nitrogen_perc))
@@ -249,7 +256,7 @@ chem_data
 names(lignin_data)
 
 lignin_data<-lignin_data%>%
-  slice(1:32)%>%
+  slice(1:37)%>%
   mutate(Species.Code = case_when(SAMPLE == "A3.8" | SAMPLE == "A2.7" ~ "DYPA",
                                   SAMPLE == "B2.1" | SAMPLE == "B1.10" ~ "MYGL",
                                   SAMPLE == "C1.6" | SAMPLE == "C3.12" ~ "CLOB",
@@ -265,7 +272,8 @@ lignin_data<-lignin_data%>%
                                   SAMPLE == "M5.9" | SAMPLE == "M1.6" ~ "MEST",
                                   SAMPLE == "N4.7" | SAMPLE == "N1.11" ~ "MEVI",
                                   SAMPLE == "O6.5" | SAMPLE == "O3.8" ~ "PEBA",
-                                  SAMPLE == "P1.1" | SAMPLE == "P2.23" ~ "ROAN"))%>%
+                                  SAMPLE == "P1.1" | SAMPLE == "P2.23" ~ "ROAN",
+                                  SPECIES.CODE == "PR" ~ "PIRA"))%>%
   group_by(Species.Code)%>%
   dplyr::summarise(mean.S.G = mean(S.G, na.rm=T))
 
@@ -279,7 +287,6 @@ lignin_data
 names(pH_data)
 
 pH_data<-pH_data%>%
-  slice(1:32)%>%
   mutate(Species.Code = case_when(Sample.ID == "W1" | Sample.ID == "W26" ~ "CASU",
                                   Sample.ID == "W2" | Sample.ID == "W16" | Sample.ID == "W31" ~ "ROAN",
                                   Sample.ID == "W3" | Sample.ID == "W13" ~ "CLOB",
@@ -295,7 +302,8 @@ pH_data<-pH_data%>%
                                   Sample.ID == "W15" | Sample.ID == "W29" ~ "MEVI",
                                   Sample.ID == "W17" | Sample.ID == "W28" ~ "DYPA",
                                   Sample.ID == "W21" | Sample.ID == "W24" ~ "MYGL",
-                                  Sample.ID == "W25" | Sample.ID == "W27" ~ "CAAU"))%>%
+                                  Sample.ID == "W25" | Sample.ID == "W27" ~ "CAAU",
+                                  Sample.ID %in% c("W33","W34","W35","W36","W37") ~ "PIRA"))%>%
   group_by(Species.Code)%>%
   dplyr::summarise(mean.pH = mean(pH, na.rm=T))
 
@@ -309,7 +317,6 @@ names(ICP_data)
 
 ICP_data<-ICP_data%>%
   rename(Sample.ID = Sample.ID...2)%>%
-  slice(1:32)%>%
   mutate(Species.Code = case_when(Sample.ID == "W1" | Sample.ID == "W26" ~ "CASU",
                                   Sample.ID == "W2" | Sample.ID == "W16" | Sample.ID == "W31" ~ "ROAN",
                                   Sample.ID == "W3" | Sample.ID == "W13" ~ "CLOB",
@@ -325,7 +332,8 @@ ICP_data<-ICP_data%>%
                                   Sample.ID == "W15" | Sample.ID == "W29" ~ "MEVI",
                                   Sample.ID == "W17" | Sample.ID == "W28" ~ "DYPA",
                                   Sample.ID == "W21" | Sample.ID == "W24" ~ "MYGL",
-                                  Sample.ID == "W25" | Sample.ID == "W27" ~ "CAAU"))%>%
+                                  Sample.ID == "W25" | Sample.ID == "W27" ~ "CAAU",
+                                  Sample.ID %in% c("W33","W34","W35","W36","W37") ~ "PIRA"))%>%
   group_by(Species.Code)%>%
   dplyr::summarise(mean.Ca.perc = mean(Ca.conc....),
                    mean.K.perc = mean(K.conc....),

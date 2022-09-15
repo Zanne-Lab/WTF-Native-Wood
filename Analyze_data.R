@@ -520,7 +520,7 @@ ggsave("Graphics/Species.massloss.png", g, width = 15, height = 6)
 # Calculating k-values
 
 # Create initial values at mass remaining = 100%
-init100 <- df%>%
+init100 <- all.df%>%
   group_by(site,Species.Code,block)%>%
   summarise(pct.mass.rem = mean(pct.mass.rem))%>%
   mutate(pct.mass.rem = 100)%>%
@@ -529,7 +529,7 @@ init100 <- df%>%
   mutate(termite.attack = 0)
 
 # Estimate k-values with negative exponential model
-k.vals <- df%>%
+k.vals <- all.df%>%
   full_join(init100)%>%
   filter(termite.attack == 0)%>%
   nest_by(station)%>%
@@ -540,19 +540,28 @@ k.vals <- df%>%
   mutate(block = unlist(strsplit(as.character(station),"[.]"))[3])%>%
   rename(k=estimate)
 
+# Remove pine from k values dataset
+k.vals.no.pine <- filter(k.vals,Species.Code != "PIRA")
+# Only pine k values
+k.vals.pine <- filter(k.vals,Species.Code == "PIRA")
+
 # Fit linear models
-k.model.site <- lm(log(k)~site,data=k.vals)
-k.model.DRO <- lm(log(k)~Species.Code,data=k.vals[k.vals$site=="DRO",])
-k.model.PNW <- lm(log(k)~Species.Code,data=k.vals[k.vals$site=="PNW",])
+k.model.site <- lm(log(k)~site,data=k.vals.no.pine)
+k.model.DRO <- lm(log(k)~Species.Code,data=k.vals.no.pine[k.vals.no.pine$site=="DRO",])
+k.model.PNW <- lm(log(k)~Species.Code,data=k.vals.no.pine[k.vals.no.pine$site=="PNW",])
+
+# Pine only
+k.model.site.pine <- lm(log(k)~site,data=k.vals.pine)
 
 # All are normal with log transform
-rs <- resid(k.model.DRO)
+rs <- resid(k.model.PNW)
 print(shapiro.test(rs))
 
 # All highly significant
 car::Anova(k.model.site)
 car::Anova(k.model.DRO)
 car::Anova(k.model.PNW)
+car::Anova(k.model.site.pine)
 
 # Calculate mean k-values
 std.error <- function(x) sd(x)/sqrt(length(x))
@@ -561,7 +570,7 @@ k.means <- k.vals%>%
   summarise(k.mean = mean(k), k.se = std.error(k))
 k.means
 
-k.means.site <- k.vals%>%
+k.means.site <- k.vals.no.pine%>%
   group_by(site)%>%
   summarise(k.mean = mean(k), k.se = std.error(k))
 k.means.site

@@ -578,11 +578,15 @@ k.means.site
 
 ###################################################################
 # Wood trait relationships with decay and termites
-df.species <- k.means%>%
+df.species.pine <- k.means%>%
   left_join(disc.rate.species)%>%
   left_join(damage.by.species)%>%
   left_join(wood_traits)%>%
   select(-k.se,-init_drywt_fraction,-mean.K.perc)
+
+# Including pine drastically changes the PCA
+df.species <- df.species.pine %>%
+  filter(Species.Code != "PIRA")
 
 vars1 <- c("wood_density", "mean.C.perc", "mean.N.perc", "mean.S.G", "mean.pH", "mean.Ca.perc", "mean.P.perc")
 corrplot(cor(df.species[vars1]),order = 'AOE',diag = F,type = 'upper',method = 'number')

@@ -147,7 +147,7 @@ disc.plot.pine<-pine.df%>%
 
 disc.plot.pine
 # can include as a supplemental figure
-ggsave("Graphics/DiscoveryPine.png", disc.plot.pine)
+ggsave("Graphics/DiscoveryPine.png", disc.plot.pine, width = 7, height = 7)
 
 
 ###################################################################

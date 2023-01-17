@@ -16,6 +16,16 @@ pine.init <- drive_get("wtf_radiata_blocks_weight.csv") %>%
   read_sheet(sheet = "radiata_initial_weights", col_names=T, trim_ws = T, 
              na = c("","#N/A", "NA", "-", " ", NULL, "NULL"))
 
+pine_drought <- drive_get("wtf_radiata_blocks_weight.csv") %>% 
+  read_sheet(sheet = "dro_drought", col_names=T, trim_ws = T, 
+             na = c("","#N/A", "NA", "-", " ", NULL, "NULL"),
+             col_types=c("ccccnnnccnDDnnnnnnnnnnnncDncnnnnnncDnnnnnccllll"))
+
+pine_rescue <- drive_get("wtf_radiata_blocks_weight.csv") %>% 
+  read_sheet(sheet = "rainforest_rescue", col_names=T, trim_ws = T, 
+             na = c("","#N/A", "NA", "-", " ", NULL, "NULL"),
+             col_types=c("ccccnnnccnDDnnnnnnnnnnnncDncnnnnnncDnnnnnccllll"))
+
 # read in excel sheet of native wood weights and wood density
 wood_weights <- drive_get("Wood_weights_native") %>% 
   read_sheet(sheet = "wtf_native_harvest", col_names=T, trim_ws = T, 
@@ -106,14 +116,10 @@ library(dplyr)
 ###################################################################
 # tidy pine blocks data set
 pine.out <- pine %>%
+  bind_rows(pine_drought,pine_rescue) %>%
   filter(!is.na(DW_Wood)) %>%
-  select(-site, 
-         -treatment_termite,
-         -tag_number, 
-         -Station) %>%
-  rename(site = site_new,
-         init_dry_wt = intial_weight_t0,
-         SampleID = wood_block_number,
+  rename(init_dry_wt = intial_weight_t0,
+         SampleID = tag_number,
          harvest = harvest_number) %>%
   rowwise() %>%
   mutate(harvest_dry_wt = sum(c_across(c(DW_Wood,DW_Excess)), na.rm = TRUE)) %>%
@@ -149,11 +155,10 @@ pine.out <- pine %>%
          months = case_when(harvest == 1 ~ 6, harvest == 2 ~ 12,harvest == 3 ~ 18,
                             harvest == 4 ~ 24, harvest == 5 ~ 30, harvest == 6 ~ 36,
                             harvest == 7 ~ 42, harvest == 8 ~ 48),
-         station = interaction(site,Species.Code,block))%>%
-  select(site,SampleID,Species.Code,block,termite_treatment_abbreviation,harvest,deployment_date,harvest_date,
-         Fire_Class,termite.attack,season_condition,months,date_diff,station,init_dry_wt,harvest_dry_wt,pro.mass.loss,pct.mass.rem) %>%
-  filter(site %in% c("DRO","PNW")) %>%
-  filter(months %in% c(12,18,24,30,36,42)) %>%
+         station = interaction(site,Species.Code,block)) %>%
+  select(-c(2,5,9,11,26,27,36,37,43:49)) %>%
+  mutate(mass.loss = init_dry_wt - harvest_dry_wt) %>%
+  mutate(dry.wet = DW_Wood/Post_drill_FW) %>%
   filter(!(SampleID %in% c(48,256))) # remove burned blocks
 
 # Write out tidy datasets to local directory
@@ -359,7 +364,7 @@ wood_traits <- int_wood%>%
 # subset weights data set by removing unnecessary columns (e.g.notes) and,
 # remove or correct sample errors and join with wood density
 
-df<-subset(wood_weights, select = -c(21:23, 32:33, 39:44))%>%
+df<-subset(wood_weights, select = -c(22:23, 32:33, 39:44))%>%
   dplyr::rename(SampleID=Label,
                 Species.Code = species) %>% # rename for consistency and merging
   filter(!is.na(SampleID)) %>% # remove empty rows
@@ -419,4 +424,12 @@ df<-subset(wood_weights, select = -c(21:23, 32:33, 39:44))%>%
 # Write out tidy datasets to local directory
 write.csv(df,"Natives_processed.csv", row.names=F, quote = F)
 write.csv(wood_traits,"Wood_traits.csv", row.names = F, quote = F)
+
+# Merge native and pine datasets
+fac.cols2 <- c("site", "block", "termite_treatment_abbreviation", "insect_present","termite_present", 
+               "fungi_present", "soil_present", "root_present", "fire_present_2021","fire_present_2019", 
+               "Lab_As.", "damage_bag", "harvest", "season_condition")
+pine.out <- pine.out %>% mutate_at(fac.cols2,as.factor)
+weights_all <- bind_rows(df,pine.out)
+write.csv(weights_all,"wood_weights_all.csv", row.names = F, quote = F)
 

@@ -156,7 +156,7 @@ pine.out <- pine %>%
                             harvest == 4 ~ 24, harvest == 5 ~ 30, harvest == 6 ~ 36,
                             harvest == 7 ~ 42, harvest == 8 ~ 48),
          station = interaction(site,Species.Code,block)) %>%
-  select(-c(2,5,9,11,26,27,36,37,43:49)) %>%
+  select(-c(1,5,9,11,26,27,36,37,43:49)) %>%
   mutate(mass.loss = init_dry_wt - harvest_dry_wt) %>%
   mutate(dry.wet = DW_Wood/Post_drill_FW) %>%
   filter(!(SampleID %in% c(48,256))) # remove burned blocks

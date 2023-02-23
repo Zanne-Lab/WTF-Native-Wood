@@ -28,7 +28,11 @@ library(corrplot)
 
 df <- read.csv("Natives_processed.csv")
 wood_traits <- read.csv("Wood_traits.csv")
-pine.df <- read.csv("Pines_processed.csv")
+pine.df <- read.csv("Pines_processed.csv") %>%
+  filter(site %in% c("DRO","PNW")) %>%
+  filter(months >= 12 & months <= 42) %>%
+  select(site,SampleID,Species.Code,block,termite_treatment_abbreviation,harvest,deployment_date,harvest_date,
+       Fire_Class,termite.attack,season_condition,months,date_diff,station,init_dry_wt,harvest_dry_wt,pro.mass.loss,pct.mass.rem)
 
 # Add pine data to natives data
 all.df <- df %>%

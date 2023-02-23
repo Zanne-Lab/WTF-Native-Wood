@@ -159,7 +159,7 @@ pine.out <- pine %>%
   select(-c(1,5,9,11,26,27,36,37,43:49)) %>%
   mutate(mass.loss = init_dry_wt - harvest_dry_wt) %>%
   mutate(dry.wet = DW_Wood/Post_drill_FW) %>%
-  filter(!(SampleID %in% c(48,256))) # remove burned blocks
+  filter(!(SampleID %in% c(222,172))) # remove burned blocks
 
 # Write out tidy datasets to local directory
 write.csv(pine.out,"Pines_processed.csv", row.names=F, quote = F)

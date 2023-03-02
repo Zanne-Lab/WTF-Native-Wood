@@ -32,7 +32,7 @@ pine.df <- read.csv("Pines_processed.csv") %>%
   filter(site %in% c("DRO","PNW")) %>%
   filter(months >= 12 & months <= 42) %>%
   select(site,SampleID,Species.Code,block,termite_treatment_abbreviation,harvest,deployment_date,harvest_date,
-       Fire_Class,termite.attack,season_condition,months,date_diff,station,init_dry_wt,harvest_dry_wt,pro.mass.loss,pct.mass.rem)
+         Fire_Class,termite.attack,season_condition,months,date_diff,station,init_dry_wt,harvest_dry_wt,pro.mass.loss,pct.mass.rem)
 
 # Add pine data to natives data
 all.df <- df %>%
@@ -67,9 +67,9 @@ df$Species.Code<-factor(df$Species.Code, levels = sp.order)
 # checked AIC with months as categorical, but no improvement, so sticking with continuous time
 
 disc.mod1<-glm(termite.attack~site+months, 
-                 data=df[df$termite_treatment_abbreviation == "TI",], family=binomial)
+               data=df[df$termite_treatment_abbreviation == "TI",], family=binomial)
 disc.mod2<-glm(termite.attack~months+Species.Code, 
-                 data=df[df$termite_treatment_abbreviation == "TI",], family=binomial)
+               data=df[df$termite_treatment_abbreviation == "TI",], family=binomial)
 summary(disc.mod1)
 summary(disc.mod2)
 car::Anova(disc.mod1) # use this for site and time effects
@@ -104,8 +104,8 @@ disc.plot<-df%>%
   ylab("Discovery") + 
   theme_bw(base_size=16) +
   theme(plot.title = element_text(hjust=0, size=18),
-        axis.text.y=element_text(size=16),
-        axis.text.x=element_text(size=16),
+        axis.text.y=element_text(size=16,color="black"),
+        axis.text.x=element_text(size=16,color="black"),
         axis.title.y=element_text(size=18),
         axis.title.x=element_text(size=18),
         legend.justification = c(0,1), legend.position=c(0.02,0.90), 
@@ -138,8 +138,8 @@ disc.plot.pine<-pine.df%>%
   ylab("Discovery") + 
   theme_bw(base_size=16) +
   theme(plot.title = element_text(hjust=0, size=18),
-        axis.text.y=element_text(size=16),
-        axis.text.x=element_text(size=16),
+        axis.text.y=element_text(size=16,color="black"),
+        axis.text.x=element_text(size=16,color="black"),
         axis.title.y=element_text(size=18),
         axis.title.x=element_text(size=18),
         legend.justification = c(0,1), legend.position=c(0.02,0.90), 
@@ -151,7 +151,7 @@ disc.plot.pine<-pine.df%>%
 
 disc.plot.pine
 # can include as a supplemental figure
-ggsave("Graphics/DiscoveryPine.png", disc.plot.pine, width = 7, height = 7)
+ggsave("Graphics/DiscoveryPine.pdf", disc.plot.pine, width = 7, height = 7)
 
 
 ###################################################################
@@ -215,8 +215,8 @@ disc.rate.plot<-disc.rate%>%
   labs(colour = "Months (season)", fill = "Months (season)")+
   theme_bw(base_size=16) +
   theme(plot.title = element_text(hjust=0, size=18),
-        axis.text.y=element_text(size=14),
-        axis.text.x=element_text(size=14, angle = 45, vjust = 1, hjust=1),
+        axis.text.y=element_text(size=14,color="black"),
+        axis.text.x=element_text(size=14, angle = 45, vjust = 1, hjust=1,color="black"),
         axis.title.y=element_text(size=18),
         axis.title.x=element_text(size=18),
         legend.position=c(0.2,0.8), 
@@ -228,7 +228,7 @@ disc.rate.plot
 
 # Figure 1
 g<-arrangeGrob(disc.rate.plot, disc.plot, ncol=2, nrow=1)
-ggsave("Graphics/Discovery.png", g, width = 15, height = 7)
+ggsave("Graphics/Discovery.pdf", g, width = 15, height = 7)
 
 
 ###################################################################
@@ -255,36 +255,36 @@ scale.tran.pine <- list(
 )
 
 beta.ran<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack+site+as.factor(months) + (1|station), 
-                  data=df, family=beta_family(link="logit")))
+                                  data=df, family=beta_family(link="logit")))
 summary(beta.ran)
 
 beta.ran0<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack+site+as.factor(months), 
-                  data=df, family=beta_family(link="logit")))
+                                   data=df, family=beta_family(link="logit")))
 summary(beta.ran0)
 
 beta.ran1<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack+site+months, 
-                  data=df, family=beta_family(link="logit")))
+                                   data=df, family=beta_family(link="logit")))
 summary(beta.ran1)
 
 beta.ran2<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*site+as.factor(months) + (1|station), 
-                   data=df, family=beta_family(link="logit")))
+                                   data=df, family=beta_family(link="logit")))
 summary(beta.ran2)
 
 beta.ran3<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*site+termite.attack*as.factor(months) + (1|station), 
-                   data=df, family=beta_family(link="logit")))
+                                   data=df, family=beta_family(link="logit")))
 summary(beta.ran3)
 
 beta.ran4<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*Species.Code + as.factor(months), 
-                   data=df, family=beta_family(link="logit")))
+                                   data=df, family=beta_family(link="logit")))
 summary(beta.ran4)
 
 beta.ran4.all<-with(scale.tran,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*Species.Code + as.factor(months), 
-                                   data=all.df, family=beta_family(link="logit")))
+                                       data=all.df, family=beta_family(link="logit")))
 summary(beta.ran4.all)
 
 # With pine dataset; model does not converge with months as categorical
 beta.ran5<-with(scale.tran.pine,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*site+termite.attack*months,
-                                   data=pine.df, family=beta_family(link="logit")))
+                                        data=pine.df, family=beta_family(link="logit")))
 summary(beta.ran5)
 
 beta.ran6<-with(scale.tran.pine,glmmTMB(linkfun(pro.mass.loss) ~ termite.attack*site+termite.attack*months + (1|station), 
@@ -355,42 +355,6 @@ contrast(term.by.time, simple="termite.attack", adjust="sidak")
 term.by.time
 
 termite<-ggplot(term.by.site.df,aes(x = site, y = (response*100), group = factor(termite.attack),
-                              colour = factor(termite.attack), shape = factor(termite.attack)))+
-  geom_errorbar(aes(ymin = ((response-SE)*100),
-                    ymax = ((response+SE)*100)),
-                width = 0.2,
-                size  = 0.5,
-                position = position_dodge(width = 0.9)) +
-  geom_point(size = 3, position = position_dodge(width=0.9), stat = "identity") +
-  theme_bw(base_size=16) +
-  scale_colour_manual(values = c("black", "darkorange"), labels = c("No", "Yes")) +
-  scale_shape_discrete(labels = c("No", "Yes")) +
-  labs(colour = "Termite discovery", shape = "Termite discovery")+
-  ylab("Mean mass loss (%)") +
-  xlab("Site")+
-  scale_x_discrete(labels=c("DRO" = "Rainforest", "PNW" = "Savanna"))+
-  geom_text(
-    aes(label = Freq, group = factor(termite.attack),
-        y=100), 
-    position = position_dodge(0.8),
-    size = 4, show.legend = F)+
-  theme_bw(base_size=16) +
-  theme(plot.title = element_text(hjust=0, size=18),
-        axis.text.y=element_text(size=16),
-        axis.text.x=element_text(size=16),
-        axis.title.y=element_text(size=18),
-        axis.title.x=element_text(size=18),
-        legend.position = "top",
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank()) +
-  ylim(0, 100)
-
-# Figure 2
-termite
-ggsave("Graphics/termite.massloss.png", termite, width = 5, height = 5)
-
-
-termite.pine<-ggplot(term.by.site.pine.df,aes(x = site, y = (response*100), group = factor(termite.attack),
                                     colour = factor(termite.attack), shape = factor(termite.attack)))+
   geom_errorbar(aes(ymin = ((response-SE)*100),
                     ymax = ((response+SE)*100)),
@@ -412,8 +376,44 @@ termite.pine<-ggplot(term.by.site.pine.df,aes(x = site, y = (response*100), grou
     size = 4, show.legend = F)+
   theme_bw(base_size=16) +
   theme(plot.title = element_text(hjust=0, size=18),
-        axis.text.y=element_text(size=16),
-        axis.text.x=element_text(size=16),
+        axis.text.y=element_text(size=16,color="black"),
+        axis.text.x=element_text(size=16,color="black"),
+        axis.title.y=element_text(size=18),
+        axis.title.x=element_text(size=18),
+        legend.position = "top",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  ylim(0, 100)
+
+# Figure 2
+termite
+ggsave("Graphics/termite.massloss.pdf", termite, width = 5, height = 5)
+
+
+termite.pine<-ggplot(term.by.site.pine.df,aes(x = site, y = (response*100), group = factor(termite.attack),
+                                              colour = factor(termite.attack), shape = factor(termite.attack)))+
+  geom_errorbar(aes(ymin = ((response-SE)*100),
+                    ymax = ((response+SE)*100)),
+                width = 0.2,
+                size  = 0.5,
+                position = position_dodge(width = 0.9)) +
+  geom_point(size = 3, position = position_dodge(width=0.9), stat = "identity") +
+  theme_bw(base_size=16) +
+  scale_colour_manual(values = c("black", "darkorange"), labels = c("No", "Yes")) +
+  scale_shape_discrete(labels = c("No", "Yes")) +
+  labs(colour = "Termite discovery", shape = "Termite discovery")+
+  ylab("Mean mass loss (%)") +
+  xlab("Site")+
+  scale_x_discrete(labels=c("DRO" = "Rainforest", "PNW" = "Savanna"))+
+  geom_text(
+    aes(label = Freq, group = factor(termite.attack),
+        y=100), 
+    position = position_dodge(0.8),
+    size = 4, show.legend = F)+
+  theme_bw(base_size=16) +
+  theme(plot.title = element_text(hjust=0, size=18),
+        axis.text.y=element_text(size=16,color="black"),
+        axis.text.x=element_text(size=16,color="black"),
         axis.title.y=element_text(size=18),
         axis.title.x=element_text(size=18),
         legend.position = "top",
@@ -423,7 +423,7 @@ termite.pine<-ggplot(term.by.site.pine.df,aes(x = site, y = (response*100), grou
 
 # SI figure
 termite.pine
-ggsave("Graphics/termite.massloss.pine.png", termite.pine, width = 5, height = 5)
+ggsave("Graphics/termite.massloss.pine.pdf", termite.pine, width = 5, height = 5)
 
 ###################################################################
 ## plot mean mass remaining at each time point for each species
@@ -467,8 +467,8 @@ ggList <- lapply(split(mean.undisc, mean.undisc$site), function(i) {
     scale_y_continuous("Mass remaining (%)", limits=c(0, 100), breaks=seq(0, 100, 10))+  
     theme_bw(base_size=16) +
     theme(plot.title = element_text(hjust=0, size=18),
-          axis.text.y=element_text(size=14),
-          axis.text.x=element_text(size=14),
+          axis.text.y=element_text(size=14,color="black"),
+          axis.text.x=element_text(size=14,color="black"),
           axis.title.y=element_text(size=18),
           axis.title.x=element_text(size=18),
           legend.position="right", 
@@ -516,7 +516,7 @@ PNW.plot2
 
 # Figure 3
 g<-arrangeGrob(DRO.plot2, PNW.plot2, ncol=2, nrow=1)
-ggsave("Graphics/Species.massloss.png", g, width = 15, height = 6)
+ggsave("Graphics/Species.massloss.pdf", g, width = 15, height = 6)
 
 
 ###################################################################
@@ -639,8 +639,8 @@ pca_plot <-
   labs(colour = "Site", shape = "Site")+
   theme_bw()+
   theme(plot.title = element_text(hjust=0, size=18),
-        axis.text.y=element_text(size=16),
-        axis.text.x=element_text(size=16),
+        axis.text.y=element_text(size=16,color="black"),
+        axis.text.x=element_text(size=16,color="black"),
         axis.title.y=element_text(size=18),
         axis.title.x=element_text(size=18),
         legend.justification = c(0,1), legend.position=c(0.01,0.99), 
@@ -665,8 +665,8 @@ loadings_plot <- pca_load2%>%
   facet_wrap(~PC)+
   theme_bw()+
   theme(plot.title = element_text(hjust=0, size=18),
-        axis.text.y=element_text(size=16),
-        axis.text.x=element_text(size=16),
+        axis.text.y=element_text(size=16,color="black"),
+        axis.text.x=element_text(size=16,color="black"),
         axis.title.y=element_text(size=18),
         axis.title.x=element_text(size=18),
         strip.text = element_text(size=18),
@@ -680,7 +680,7 @@ loadings_plot
 
 # Figure 4
 g <- grid.arrange(arrangeGrob(pca_plot, loadings_plot, ncol=2, nrow=1, widths = c(1.5,1)))
-ggsave("Graphics/pca.plot.png", g, width = 15, height = 8)
+ggsave("Graphics/pca.plot.pdf", g, width = 15, height = 8)
 
 # Linear regression of log(k) versus PC1 and PC2
 # Both significant negative relationships
